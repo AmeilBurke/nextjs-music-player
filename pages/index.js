@@ -2,8 +2,12 @@ import Head from "next/head";
 import { Box } from "@chakra-ui/react";
 import ComponentNavbar from "../components/ComponentNavbar";
 import ComponentMusicPlayer from "../components/ComponentMusicPlayer";
+import songs from "../utils/songs.json";
+import React, { useState } from 'react'
 
 export default function Home() {
+  const [activeSong, setActiveSong] = useState(songs[0]);
+  // console.log(songs);
   return (
     <div>
       <Head>
@@ -14,7 +18,7 @@ export default function Home() {
       <main>
         <Box maxW={["1536px"]} h={['100vh']} mx={['auto']} pt={['2rem']} position={['relative']}>
           <ComponentNavbar />
-          <ComponentMusicPlayer />
+          <ComponentMusicPlayer activeSong={activeSong} songs={songs} />
         </Box>
       </main>
     </div>
