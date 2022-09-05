@@ -1,0 +1,88 @@
+import React, { useState, useRef, useEffect } from "react";
+import Image from "next/image";
+import songs from "../utils/songs.json";
+import {
+  Center,
+  Heading,
+  Text,
+  HStack,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  IconButton,
+} from "@chakra-ui/react";
+import { FiPlay, FiPause, FiSkipBack, FiSkipForward } from "react-icons/fi";
+import { Skeleton, SkeletonCircle, SkeletonText } from "@chakra-ui/react";
+import { getAudioInformation, ComponentAudioPlayer } from "../utils/audio";
+
+const ComponentMusicPlayer = (props) => {
+  const [audioSource, setAudioSource] = useState();
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [isAudioLoaded, setIsAudioLoaded] = useState(false);
+  const [currentSongDuration, setCurrentSongDuration] = useState();
+  const [currentSongTime, setCurrentSongTime] = useState();
+  const [songPercent, setSongPercent] = useState(0);
+
+  const audioPlayer = useRef();
+
+
+  let audioInfo = getAudioInformation(props.activeSong);
+
+  // console.log(audioInfo);
+
+  const playPauseHandler = () => {
+    if (isAudioPlaying) {
+      audioPlayer.current.pause();
+    } else {
+      audioPlayer.current.play();
+      setIsAudioLoaded(true);
+    }
+    setIsAudioPlaying(!isAudioPlaying);
+  };
+
+  const timeUpdateHandler = (e) => {
+    setCurrentSongTime(audioPlayer.current.currentTime);
+    setCurrentSongDuration(e.target.duration);
+
+    setSongPercent(
+      (Math.floor(e.target.currentTime) / Math.floor(e.target.duration)) * 100
+    );
+  };  
+
+  const songScrub = (e) => {
+    // setCurrentSongTime(Math.floor(currentSongDuration / e));
+    // audioPlayer.current.currentTime = parseFloat(Math.floor(e / currentSongDuration));
+    // console.log(currentSongDuration);
+  };
+
+  return (
+    <Center pt={["2rem"]} display={["flex"]} flexDir={["column"]}>
+      <Image width={500} height={500} src={props.activeSong.image} alt="Decorative" />
+      <Heading mt={["2rem"]}>{props.activeSong.title}</Heading>
+      <Text mb={["2rem"]}>{props.activeSong.artist}</Text>
+
+      <HStack w={["100%"]} mb={["1rem"]} px={["1rem"]} justifyContent={["space-between"]} >
+        <Text>{isAudioLoaded ? Math.floor(currentSongTime / 60) + ":" + ("0" + Math.floor(currentSongTime % 60)).slice(-2) : "0:00"}</Text>
+        <Slider w={["70%"]} aria-label="slider-ex-1" defaultValue={0} value={songPercent} onChangeEnd={songScrub} >
+          <SliderTrack>
+            <SliderFilledTrack bg={["#ffd28a"]} />
+          </SliderTrack>
+          <SliderThumb />
+        </Slider>
+        <Text>{isAudioLoaded ? Math.round(currentSongDuration / 60) + ":" + ("0" + Math.floor(currentSongDuration % 60)).slice(-2) : "0:00"}</Text>
+      </HStack>
+
+      <HStack w={["75%"]} px={["1rem"]} justifyContent={["space-between"]}>
+        <IconButton size="lg" icon={<FiSkipBack />}></IconButton>
+        <IconButton size="lg" onClick={playPauseHandler} icon={isAudioPlaying ? <FiPause /> : <FiPlay />} ></IconButton>
+        <IconButton size="lg" icon={<FiSkipForward />}></IconButton>
+      </HStack>
+
+    <ComponentAudioPlayer audioPlayer={audioPlayer} />
+
+    </Center>
+  );
+};
+
+export default ComponentMusicPlayer;

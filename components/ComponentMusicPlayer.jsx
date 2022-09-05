@@ -1,73 +1,176 @@
 import React, { useState, useRef, useEffect } from "react";
 import Image from "next/image";
 import songs from "../utils/songs.json";
-import { Center, Heading, Text, HStack, Slider, SliderTrack, SliderFilledTrack, SliderThumb, IconButton } from "@chakra-ui/react";
+import {
+  Center,
+  Heading,
+  Text,
+  HStack,
+  Slider,
+  SliderTrack,
+  SliderFilledTrack,
+  SliderThumb,
+  IconButton,
+  Box,
+  Spinner,
+} from "@chakra-ui/react";
 import { FiPlay, FiPause, FiSkipBack, FiSkipForward } from "react-icons/fi";
-import { Skeleton, SkeletonCircle, SkeletonText } from '@chakra-ui/react'
 
 const ComponentMusicPlayer = (props) => {
-
-  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
-  const [isAudioLoaded, setIsAudioLoaded] = useState(false);
-  const [currentSongDuration, setCurrentSongDuration] = useState();
-  const [currentSongTime, setCurrentSongTime] = useState();
-  const [songPercent, setSongPercent] = useState();
+  // console.log(props);
   const audioPlayer = useRef();
+  const audioPlayerSource = useRef();
+
+  const [audio, setAudio] = useState({
+    currentTime: 0,
+    duration: 0,
+  });
+  const [isAudioPlaying, setIsAudioPlaying] = useState(false);
+  const [songPercent, setSongPercent] = useState(0);
+
+  useEffect(() => {
+    setAudio({
+      currentTime: audioPlayer.current.currentTime,
+      duration: audioPlayer.current.duration,
+    });
+    setSongPercent(
+      getSongPercent(
+        audioPlayer.current.currentTime,
+        audioPlayer.current.duration
+      )
+    );
+  }, [audioPlayer]);
 
   const playPauseHandler = () => {
+    setIsAudioPlaying(!isAudioPlaying);
+
     if (isAudioPlaying) {
       audioPlayer.current.pause();
     } else {
       audioPlayer.current.play();
-      setIsAudioLoaded(true);
-
     }
-    setIsAudioPlaying(!isAudioPlaying);
-  }
+  };
 
-  // const timeUpdateHandlerInput = (e) => {
-  //   console.log(e);
-  //   setCurrentSongTime(currentSongDuration / e);
-  // }
+  const getFormattedTime = (intToEdit) => {
+    let minutes = Math.floor(intToEdit / 60);
+    let seconds = (Math.round(intToEdit) % 60).toLocaleString("en-US", {
+      minimumIntegerDigits: 2,
+      useGrouping: false,
+    });
+    return `${minutes}:${seconds}`;
+  };
 
-  const timeUpdateHandler = (e) => {
-    console.log(e)
-    setCurrentSongTime(e.target.currentTime);
-    setCurrentSongDuration(e.target.duration);
+  const getSongPercent = (currentTime, duration) => {
+    return Math.round((currentTime / duration) * 100);
+  };
 
-    setSongPercent(Math.floor(e.target.currentTime) / Math.floor(e.target.duration) * 100);
+  const updateSongPercent = (val) => {
+    audioPlayer.current.currentTime =
+      (val / 100) * audioPlayer.current.duration;
+    setAudio({
+      currentTime: audioPlayer.current.currentTime,
+      duration: audioPlayer.current.duration,
+    });
+    // console.log(audioPlayer.current.currentTime);
+  };
 
-    console.log(Math.floor(songPercent));
-  }
+  const userChangeTrack = (direction) => {
+    audioPlayer.current.pause();
+    let currentSongIndex = props.songs.indexOf(props.activeSong);
+    if (direction === "forwards") {
+      if (currentSongIndex === props.songs.length -1) {
+        currentSongIndex = -1;
+      }
+      props.setActiveSong(props.songs[currentSongIndex + 1]);
+      audioPlayerSource.src = props.activeSong.audio;
+    }
+    else {
+      if(currentSongIndex === 0) {
+        currentSongIndex = props.songs.length -1;
+      }
+      props.setActiveSong(props.songs[currentSongIndex - 1]);
+      audioPlayerSource.src = props.activeSong.audio;
+    }
+
+    if(isAudioPlaying) {
+    audioPlayer.current.play();
+    }
+  console.log(currentSongIndex);
+};
 
   return (
     <Center pt={["2rem"]} display={["flex"]} flexDir={["column"]}>
-      <Image width={500} height={500} src={props.activeSong.image} alt="Decorative" />
+      <Image
+        width={500}
+        height={500}
+        src={props.activeSong.image}
+        alt="Decorative"
+      />
       <Heading mt={["2rem"]}>{props.activeSong.title}</Heading>
-      <Text mb={['2rem']} >{props.activeSong.artist}</Text>
+      <Text mb={["2rem"]}>{props.activeSong.artist}</Text>
 
-      <HStack w={["100%"]} mb={['1rem']} px={["1rem"]} justifyContent={["space-between"]}>
-        <Text>{isAudioLoaded ? Math.floor(currentSongTime / 60) + ":" + ("0" + Math.floor(currentSongTime % 60)).slice(-2) : '0:00'}</Text>
-        <Slider w={['70%']} aria-label='slider-ex-1' defaultValue={0} value={songPercent} onChange={timeUpdateHandlerInput}>
-          <SliderTrack >
-            <SliderFilledTrack bg={['#ffd28a']} />
+      <HStack
+        w={["100%"]}
+        mb={["1rem"]}
+        px={["1rem"]}
+        justifyContent={["space-between"]}
+      >
+        <Text>{getFormattedTime(audio.currentTime)}</Text>
+        <Slider
+          w={["70%"]}
+          aria-label="slider-ex-1"
+          defaultValue={0}
+          onChangeEnd={(val) => {
+            updateSongPercent(val);
+          }}
+        >
+          <SliderTrack>
+            <SliderFilledTrack bg={["#ffd28a"]} />
           </SliderTrack>
           <SliderThumb />
         </Slider>
-        <Text>{isAudioLoaded ? Math.round(currentSongDuration / 60) + ":" + ("0" + Math.floor(currentSongDuration % 60)).slice(-2) : '0:00'}</Text>
-        {/* <Text>{currentSongDuration}</Text> */}
+        <Box>
+          {audio.duration ? (
+            <Text>{getFormattedTime(audio.duration)}</Text>
+          ) : (
+            <Spinner />
+          )}
+        </Box>
       </HStack>
 
       <HStack w={["75%"]} px={["1rem"]} justifyContent={["space-between"]}>
-        <IconButton size='lg' icon={<FiSkipBack />}></IconButton>
-        <IconButton size='lg' onClick={playPauseHandler} icon={isAudioPlaying ? <FiPause /> : <FiPlay />}></IconButton>
-        <IconButton size='lg' icon={<FiSkipForward />}></IconButton>
+        <IconButton
+          size="lg"
+          onClick={() => {
+            userChangeTrack("backwards");
+          }}
+          icon={<FiSkipBack />}
+        ></IconButton>
+        <IconButton
+          size="lg"
+          onClick={playPauseHandler}
+          icon={isAudioPlaying ? <FiPause /> : <FiPlay />}
+        ></IconButton>
+        <IconButton
+          size="lg"
+          onClick={() => {
+            userChangeTrack("forwards");
+          }}
+          icon={<FiSkipForward />}
+        ></IconButton>
       </HStack>
 
-      <audio ref={audioPlayer} onLoadedMetadata={timeUpdateHandler} onTimeUpdate={timeUpdateHandler}>
-        <source src={props.activeSong.audio} ></source>
+      <audio
+        ref={audioPlayer}
+        onTimeUpdate={() => {
+          setAudio({
+            currentTime: audioPlayer.current.currentTime,
+            duration: audioPlayer.current.duration,
+          });
+        }}
+      >
+        <source ref={audioPlayerSource} src={props.activeSong.audio}></source>
       </audio>
-
     </Center>
   );
 };
